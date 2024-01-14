@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: short-api-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      components: backend
+  template:
+    metadata:
+      labels:
+        components: backend
+    spec:
+      containers:
+        - name: short-app
+          image: antonlarichev/short-api:v1.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: short-api-secret
+                  key: DATABASE_URL
+
+          volumeMounts:
+            - name:  test #соврадает с volumes 
+              mountPath:  /etc/test #Куда монтировать конфиг
+              readOnly: True
+          livenessProbe:
+            exec: 
+              command:
+                - curl
+                - --fail
+                - http://localhost:3000/api
+            initialDelaySeconds: 30 #Время до старта приложения
+            periodSeconds: 5 # как часто проверять приложение что оно работает
+            failureThreshold: 1 #сколько подряд допустимо ошибок чтобы понять что контейнер не работает
+          startupProbe:
+            exec: 
+              command:
+                - curl
+                - --fail
+                - http://localhost:3000/api
+            periodSeconds: 10 # c периодом 10 секунд запускать url 
+            failureThreshold: 5 #5 попыток
+          readinessProbe:
+            exec: 
+              command:
+                - curl
+                - --fail
+                - http://localhost:3000/api
+            initialDelaySeconds: 30 #Время до старта приложения
+            periodSeconds: 5 # как часто проверять приложение что оно работает
+            failureThreshold: #сколько подряд допустимо ошибок чтобы понять что контейнер не работает
+      volu  
+      volumes:
+        - name: test
+          configMap:
+            name: demo-config # имя из файла configmap
+#DATABASE_URL
+#postgresql://user:password@url:5432/db
